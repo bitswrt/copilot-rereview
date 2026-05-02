@@ -53,7 +53,7 @@ if [ -z "${GH_TOKEN:-}" ]; then
     echo "Pass it via \`with.github-token\`, e.g.:"
     echo ""
     echo '```yaml'
-    echo "    - uses: bitswrt-devs/copilot-rereview@v1"
+    echo "    - uses: bitswrt/copilot-rereview@v1"
     echo "      with:"
     echo "        pr-number: \${{ github.event.pull_request.number }}"
     echo "        github-token: \${{ secrets.GH_ORG_TOKEN }}"

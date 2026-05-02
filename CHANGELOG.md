@@ -19,5 +19,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Defensive guards: `pr-number` digit-only validation, GraphQL `errors` field detection (defends against gh-CLI silent-succeed edge cases), graceful fallback for `$GITHUB_STEP_SUMMARY` etc. when running locally.
 - Local dry-run support — script can run outside GitHub Actions with sensible env defaults.
 
-[Unreleased]: https://github.com/bitswrt-devs/copilot-rereview/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/bitswrt-devs/copilot-rereview/releases/tag/v1.0.0
+[Unreleased]: https://github.com/bitswrt/copilot-rereview/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/bitswrt/copilot-rereview/releases/tag/v1.0.0
