@@ -1,7 +1,7 @@
 # Re-request Copilot Review
 
 [![Marketplace](https://img.shields.io/badge/Marketplace-Re--request%20Copilot%20Review-blue?logo=github)](https://github.com/marketplace/actions/re-request-copilot-review)
-[![Test](https://github.com/bitswrt-devs/copilot-rereview/actions/workflows/test.yml/badge.svg)](https://github.com/bitswrt-devs/copilot-rereview/actions/workflows/test.yml)
+[![Test](https://github.com/bitswrt/copilot-rereview/actions/workflows/test.yml/badge.svg)](https://github.com/bitswrt/copilot-rereview/actions/workflows/test.yml)
 
 Re-request **GitHub Copilot code review** on a pull request via the GraphQL `requestReviewsByLogin` mutation.
 
@@ -40,7 +40,7 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       github.event.pull_request.head.repo.full_name == github.repository
     steps:
-      - uses: bitswrt-devs/copilot-rereview@v1
+      - uses: bitswrt/copilot-rereview@v1
         with:
           pr-number: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
           github-token: ${{ secrets.GH_ORG_TOKEN }}
@@ -49,7 +49,7 @@ jobs:
 ### Multi-bot support
 
 ```yaml
-- uses: bitswrt-devs/copilot-rereview@v1
+- uses: bitswrt/copilot-rereview@v1
   with:
     pr-number: ${{ github.event.pull_request.number }}
     github-token: ${{ secrets.GH_ORG_TOKEN }}

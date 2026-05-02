@@ -4,7 +4,7 @@
 
 If you discover a security issue, please **do not open a public issue**. Instead, report it privately via GitHub's security advisory system:
 
-**[Report a vulnerability](https://github.com/bitswrt-devs/copilot-rereview/security/advisories/new)**
+**[Report a vulnerability](https://github.com/bitswrt/copilot-rereview/security/advisories/new)**
 
 We will acknowledge your report within 5 business days and aim to provide a fix or mitigation within 30 days for confirmed issues.
 
