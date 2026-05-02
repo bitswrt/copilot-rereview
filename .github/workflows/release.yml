@@ -1,0 +1,36 @@
+name: Release
+
+# Maintain the floating major tag (v1, v2, ...) on every release so users
+# pinning @v1 automatically pick up compatible patch/minor updates.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  update-major-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Move floating major tag
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          # RELEASE_TAG must be a SemVer like vX.Y.Z (no pre-release suffix).
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Skipping major-tag update: '$RELEASE_TAG' is not a stable SemVer release"
+            exit 0
+          fi
+          MAJOR=${RELEASE_TAG%%.*}   # v1.2.3 → v1
+          echo "Moving $MAJOR to point at $RELEASE_TAG"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git tag -f "$MAJOR" "$RELEASE_TAG"
+          git push origin "$MAJOR" --force

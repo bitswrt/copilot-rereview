@@ -1,0 +1,74 @@
+name: Test
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to test against (in this repo)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run shellcheck
+        run: shellcheck scripts/*.sh
+
+  yamllint:
+    name: YAML Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run yamllint on action.yml
+        run: |
+          pip install --user yamllint
+          yamllint -d "{extends: default, rules: {line-length: {max: 200}, document-start: disable, truthy: {check-keys: false}}}" action.yml .github/
+
+  action-syntax:
+    name: action.yml schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate action.yml structure
+        run: |
+          # Required fields per Marketplace spec.
+          for field in name description runs; do
+            if ! grep -qE "^${field}:" action.yml; then
+              echo "::error::action.yml missing required field: ${field}"
+              exit 1
+            fi
+          done
+          # Composite actions need 'using: composite' and 'steps:'.
+          if ! grep -qE "using:\s*composite" action.yml; then
+            echo "::error::action.yml not a composite action"
+            exit 1
+          fi
+          # Branding required for Marketplace listing.
+          if ! grep -qE "^branding:" action.yml; then
+            echo "::error::action.yml missing branding (required for Marketplace)"
+            exit 1
+          fi
+
+  integration:
+    name: Integration test (against fixture PR)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run action against fixture PR
+        uses: ./
+        with:
+          pr-number: ${{ inputs.pr_number }}
+          github-token: ${{ secrets.GH_TEST_TOKEN || secrets.GITHUB_TOKEN }}

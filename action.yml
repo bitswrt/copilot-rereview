@@ -1,0 +1,56 @@
+name: 'Re-request Copilot Review'
+description: >-
+  Re-request GitHub Copilot code review on a PR via the GraphQL
+  requestReviewsByLogin mutation. Workaround for the org-level Ruleset gap
+  where re-review does not auto-trigger on subsequent pushes.
+author: 'NHXWRT'
+
+# Marketplace card branding (Feather Icons name + 8 supported colors).
+branding:
+  icon: 'refresh-cw'
+  color: 'blue'
+
+inputs:
+  pr-number:
+    description: 'Pull request number to re-request review on'
+    required: true
+  github-token:
+    description: >-
+      GitHub PAT with repo Pull requests: read+write permission. The default
+      GITHUB_TOKEN may not be able to add @copilot as a reviewer under some
+      organization policies — use a fine-grained PAT scoped to this purpose.
+    required: true
+  repository:
+    description: 'Target repository in owner/name format'
+    required: false
+    default: ${{ github.repository }}
+  bot-logins:
+    description: >-
+      Comma-separated bot logins (each WITH the [bot] suffix) to request
+      review from. Defaults to GitHub Copilot's review bot. Add more for
+      multi-bot setups, e.g.
+      "copilot-pull-request-reviewer[bot],coderabbitai[bot]".
+    required: false
+    default: 'copilot-pull-request-reviewer[bot]'
+
+outputs:
+  review-requested:
+    description: '"true" if review was re-requested successfully, "false" otherwise'
+    value: ${{ steps.rerequest.outputs.review-requested }}
+  pr-node-id:
+    description: 'GraphQL node ID of the target PR (useful for chaining)'
+    value: ${{ steps.rerequest.outputs.pr-node-id }}
+
+runs:
+  using: composite
+  steps:
+    - id: rerequest
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR: ${{ inputs.pr-number }}
+        REPO: ${{ inputs.repository }}
+        BOT_LOGINS: ${{ inputs.bot-logins }}
+        TRIGGER: ${{ github.event_name }}
+        ACTOR: ${{ github.actor }}
+      run: ${{ github.action_path }}/scripts/rerequest.sh
