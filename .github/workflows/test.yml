@@ -20,7 +20,7 @@ jobs:
     name: ShellCheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run shellcheck
         run: shellcheck scripts/*.sh
 
@@ -28,7 +28,7 @@ jobs:
     name: YAML Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run yamllint on action.yml
         run: |
           pip install --user yamllint
@@ -38,7 +38,7 @@ jobs:
     name: action.yml schema
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Validate action.yml structure
         run: |
           # Required fields per Marketplace spec.
@@ -66,7 +66,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run action against fixture PR
         uses: ./
         with:
