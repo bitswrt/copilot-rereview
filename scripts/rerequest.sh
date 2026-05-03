@@ -166,13 +166,15 @@ echo "pr-node-id=$PR_NODE_ID" >> "$GITHUB_OUTPUT"
 # Build -F arguments from comma-separated BOT_LOGINS.
 GH_API_ARGS=(-F prId="$PR_NODE_ID")
 IFS=',' read -ra BOT_LOGINS_ARR <<< "$BOT_LOGINS"
-BOT_LOGINS_DISPLAY=""
+BOT_LOGINS_DISPLAY=""   # comma-joined plain (e.g. `a, b`) — used in workflow log + Bots cell
+BOT_LOGINS_QUOTED=""    # comma-joined quoted (e.g. `"a", "b"`) — used in GraphQL [String!] cell so the rendered value is a syntactically valid list literal
 for raw in "${BOT_LOGINS_ARR[@]}"; do
   # Trim each login.
   bot=$(printf '%s' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
   [ -z "$bot" ] && continue
   GH_API_ARGS+=(-f "botLogins[]=$bot")
   BOT_LOGINS_DISPLAY="${BOT_LOGINS_DISPLAY:+$BOT_LOGINS_DISPLAY, }$bot"
+  BOT_LOGINS_QUOTED="${BOT_LOGINS_QUOTED:+$BOT_LOGINS_QUOTED, }\"$bot\""
 done
 
 GH_VERSION=$(gh --version | head -1 | awk '{print $3}')
@@ -230,11 +232,14 @@ fi
   echo ""
   echo "### GraphQL mutation"
   echo ""
-  echo "| Variable | Value |"
+  # "Field" header (not "Variable") — Mutation row + 3 input fields below. The
+  # actual GraphQL variables are $prId/$botLogins (see Reproduce locally
+  # block); pullRequestId/botLogins/union are input-object fields.
+  echo "| Field | Value |"
   echo "| --- | --- |"
-  echo "| Operation | \`requestReviewsByLogin\` |"
-  echo "| \`pullRequestId\` | \`$PR_NODE_ID\` |"
-  echo "| \`botLogins\` | \`[$BOT_LOGINS_DISPLAY]\` |"
+  echo "| Mutation | \`requestReviewsByLogin\` |"
+  echo "| \`pullRequestId\` | \`\"$PR_NODE_ID\"\` |"
+  echo "| \`botLogins\` | \`[$BOT_LOGINS_QUOTED]\` |"
   echo "| \`union\` | \`true\` |"
   echo ""
   echo "### Response"
