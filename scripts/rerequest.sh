@@ -250,7 +250,15 @@ fi
     echo "❌ Failed (exit \`$STATUS\`)."
   fi
   echo ""
-  echo '```json'
+  # EDIT_OUT can be (1) success JSON, (2) GraphQL errors JSON, or (3) plain
+  # stderr text from gh CLI errors / silent-success placeholder. Only JSON
+  # cases get ```json highlighting — others use a plain fence to avoid
+  # misleading syntax highlighting on non-JSON content.
+  if [ -n "$EDIT_OUT" ] && printf '%s' "$EDIT_OUT" | jq -e . >/dev/null 2>&1; then
+    echo '```json'
+  else
+    echo '```'
+  fi
   if [ -z "$EDIT_OUT" ]; then
     echo "(no output — gh api returned silently with exit $STATUS)"
   else
