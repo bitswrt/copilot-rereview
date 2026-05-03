@@ -176,8 +176,9 @@ for raw in "${BOT_LOGINS_ARR[@]}"; do
 done
 
 GH_VERSION=$(gh --version | head -1 | awk '{print $3}')
-CMD="gh api graphql requestReviewsByLogin(prId=$PR_NODE_ID, botLogins=[$BOT_LOGINS_DISPLAY], union=true)"
-echo "$ $CMD"
+# Workflow log line — explicitly NOT a shell command (no $ prompt) to avoid
+# users copy-pasting the pseudo-syntax into a terminal expecting it to run.
+echo "[gh api graphql] mutation: requestReviewsByLogin(pullRequestId=$PR_NODE_ID, botLogins=[$BOT_LOGINS_DISPLAY], union=true)"
 set +e
 # shellcheck disable=SC2016 # $prId/$botLogins are GraphQL variable refs, must NOT shell-expand
 EDIT_OUT=$(gh api graphql "${GH_API_ARGS[@]}" \
@@ -227,21 +228,50 @@ fi
   echo "| Timestamp | $TS |"
   echo "| gh CLI | \`$GH_VERSION\` |"
   echo ""
-  echo "### Command"
+  echo "### GraphQL mutation"
   echo ""
-  echo '```'
-  echo "$ $CMD"
-  echo '```'
+  echo "| Variable | Value |"
+  echo "| --- | --- |"
+  echo "| Operation | \`requestReviewsByLogin\` |"
+  echo "| \`pullRequestId\` | \`$PR_NODE_ID\` |"
+  echo "| \`botLogins\` | \`[$BOT_LOGINS_DISPLAY]\` |"
+  echo "| \`union\` | \`true\` |"
   echo ""
-  echo "### Output"
+  echo "### Response"
   echo ""
-  echo '```'
+  if [ "$STATUS" -eq 0 ]; then
+    echo "✅ Success — no \`errors\` field in response."
+  else
+    echo "❌ Failed (exit \`$STATUS\`)."
+  fi
+  echo ""
+  echo '```json'
   if [ -z "$EDIT_OUT" ]; then
     echo "(no output — gh api returned silently with exit $STATUS)"
   else
     printf '%s\n' "$EDIT_OUT"
   fi
   echo '```'
+  echo ""
+  echo "<details><summary>Reproduce locally</summary>"
+  echo ""
+  echo '```bash'
+  echo "gh api graphql \\"
+  echo "  -F prId='$PR_NODE_ID' \\"
+  for raw in "${BOT_LOGINS_ARR[@]}"; do
+    bot=$(printf '%s' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    [ -z "$bot" ] && continue
+    echo "  -f 'botLogins[]=$bot' \\"
+  done
+  echo "  -f query='mutation(\$prId: ID!, \$botLogins: [String!]) {"
+  echo "    requestReviewsByLogin(input: {"
+  echo "      pullRequestId: \$prId,"
+  echo "      botLogins: \$botLogins,"
+  echo "      union: true"
+  echo "    }) { clientMutationId }"
+  echo "  }'"
+  echo '```'
+  echo "</details>"
 
   if [ "$STATUS" -ne 0 ]; then
     echo ""
