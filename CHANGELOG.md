@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Step Summary: replace `### Command` (which displayed a pseudo-shell-command misleading users into thinking they could re-run it in a terminal) with structured `### GraphQL mutation` (variable table) + `### Response` (status + JSON) + folded `Reproduce locally` (a real, copy-pastable `gh api graphql -F ... -f ...` command). Workflow log line also rewritten from `$ <pseudo-command>` to `[gh api graphql] mutation: ...` to drop the misleading `$` shell prompt. Behaviour-preserving display change only — the underlying mutation call is unchanged. Fixes #3.
+
 ## [1.0.0] — 2026-05-03
 
 ### Added

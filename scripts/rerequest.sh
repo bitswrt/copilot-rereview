@@ -166,18 +166,21 @@ echo "pr-node-id=$PR_NODE_ID" >> "$GITHUB_OUTPUT"
 # Build -F arguments from comma-separated BOT_LOGINS.
 GH_API_ARGS=(-F prId="$PR_NODE_ID")
 IFS=',' read -ra BOT_LOGINS_ARR <<< "$BOT_LOGINS"
-BOT_LOGINS_DISPLAY=""
+BOT_LOGINS_DISPLAY=""   # comma-joined plain (e.g. `a, b`) — used in workflow log + Bots cell
+BOT_LOGINS_QUOTED=""    # comma-joined quoted (e.g. `"a", "b"`) — used in GraphQL [String!] cell so the rendered value is a syntactically valid list literal
 for raw in "${BOT_LOGINS_ARR[@]}"; do
   # Trim each login.
   bot=$(printf '%s' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
   [ -z "$bot" ] && continue
   GH_API_ARGS+=(-f "botLogins[]=$bot")
   BOT_LOGINS_DISPLAY="${BOT_LOGINS_DISPLAY:+$BOT_LOGINS_DISPLAY, }$bot"
+  BOT_LOGINS_QUOTED="${BOT_LOGINS_QUOTED:+$BOT_LOGINS_QUOTED, }\"$bot\""
 done
 
 GH_VERSION=$(gh --version | head -1 | awk '{print $3}')
-CMD="gh api graphql requestReviewsByLogin(prId=$PR_NODE_ID, botLogins=[$BOT_LOGINS_DISPLAY], union=true)"
-echo "$ $CMD"
+# Workflow log line — explicitly NOT a shell command (no $ prompt) to avoid
+# users copy-pasting the pseudo-syntax into a terminal expecting it to run.
+echo "[gh api graphql] mutation: requestReviewsByLogin(pullRequestId=$PR_NODE_ID, botLogins=[$BOT_LOGINS_DISPLAY], union=true)"
 set +e
 # shellcheck disable=SC2016 # $prId/$botLogins are GraphQL variable refs, must NOT shell-expand
 EDIT_OUT=$(gh api graphql "${GH_API_ARGS[@]}" \
@@ -227,21 +230,61 @@ fi
   echo "| Timestamp | $TS |"
   echo "| gh CLI | \`$GH_VERSION\` |"
   echo ""
-  echo "### Command"
+  echo "### GraphQL mutation"
   echo ""
-  echo '```'
-  echo "$ $CMD"
-  echo '```'
+  # "Field" header (not "Variable") — Mutation row + 3 input fields below. The
+  # actual GraphQL variables are $prId/$botLogins (see Reproduce locally
+  # block); pullRequestId/botLogins/union are input-object fields.
+  echo "| Field | Value |"
+  echo "| --- | --- |"
+  echo "| Mutation | \`requestReviewsByLogin\` |"
+  echo "| \`pullRequestId\` | \`\"$PR_NODE_ID\"\` |"
+  echo "| \`botLogins\` | \`[$BOT_LOGINS_QUOTED]\` |"
+  echo "| \`union\` | \`true\` |"
   echo ""
-  echo "### Output"
+  echo "### Response"
   echo ""
-  echo '```'
+  if [ "$STATUS" -eq 0 ]; then
+    echo "✅ Success — no \`errors\` field in response."
+  else
+    echo "❌ Failed (exit \`$STATUS\`)."
+  fi
+  echo ""
+  # EDIT_OUT can be (1) success JSON, (2) GraphQL errors JSON, or (3) plain
+  # stderr text from gh CLI errors / silent-success placeholder. Only JSON
+  # cases get ```json highlighting — others use a plain fence to avoid
+  # misleading syntax highlighting on non-JSON content.
+  if [ -n "$EDIT_OUT" ] && printf '%s' "$EDIT_OUT" | jq -e . >/dev/null 2>&1; then
+    echo '```json'
+  else
+    echo '```'
+  fi
   if [ -z "$EDIT_OUT" ]; then
     echo "(no output — gh api returned silently with exit $STATUS)"
   else
     printf '%s\n' "$EDIT_OUT"
   fi
   echo '```'
+  echo ""
+  echo "<details><summary>Reproduce locally</summary>"
+  echo ""
+  echo '```bash'
+  echo "gh api graphql \\"
+  echo "  -F prId='$PR_NODE_ID' \\"
+  for raw in "${BOT_LOGINS_ARR[@]}"; do
+    bot=$(printf '%s' "$raw" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    [ -z "$bot" ] && continue
+    echo "  -f 'botLogins[]=$bot' \\"
+  done
+  echo "  -f query='mutation(\$prId: ID!, \$botLogins: [String!]) {"
+  echo "    requestReviewsByLogin(input: {"
+  echo "      pullRequestId: \$prId,"
+  echo "      botLogins: \$botLogins,"
+  echo "      union: true"
+  echo "    }) { clientMutationId }"
+  echo "  }'"
+  echo '```'
+  echo "</details>"
 
   if [ "$STATUS" -ne 0 ]; then
     echo ""
